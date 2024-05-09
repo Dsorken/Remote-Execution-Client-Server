@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     if (server_response < 0) {
         perror("Server Message Error");
     }
-    printf("Message Sent");
+    printf("Message Sent\n");
 
     close(client_socket);
     close(server_socket);
