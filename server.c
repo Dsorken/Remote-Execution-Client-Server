@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <pthread.h>
 #define PORT 43434
 
@@ -27,7 +28,7 @@ int main(int argc, char *argv[]) {
     server_address.sin_port = htons(PORT);
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    int bind_status = bind(server_socket, (struct sockaddr_in*) &server_address, sizeof(server_address));
+    int bind_status = bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address));
 
     if (bind_status < 0) {
         perror("Bind Failed");
@@ -41,7 +42,7 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
-    int client_socket = accept(server_socket, &client_address, &client_address_length);
+    int client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_length);
 
     if (client_socket < 0) {
         perror("Accept Failed");
