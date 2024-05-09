@@ -2,6 +2,8 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <stdlib.h>
+#include <string.h>
 #include <pthread.h>
 #define PORT 43434
 
