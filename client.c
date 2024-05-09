@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +23,7 @@ int main(int argc, char *argv[]) {
 
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(PORT);
-    server_address.sin_addr.s_addr = htonl("127.0.0.1");
+    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     int server_connection = connect(client_socket, (struct sockaddr*) &server_address, sizeof(server_address));
 
