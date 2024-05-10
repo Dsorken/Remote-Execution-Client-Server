@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server_address;
     char buffer[1024] = {0};
     bool connected = false;
-    bool exit = false;
+    bool exit_client = false;
 
     int client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket < 0) {
