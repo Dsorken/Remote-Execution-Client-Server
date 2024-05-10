@@ -1,5 +1,7 @@
 CC = gcc
 
+all: server client
+
 server: server.o
 	$(CC) -o server server.o client_queue.o -pthread
 
