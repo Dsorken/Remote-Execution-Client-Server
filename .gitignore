@@ -3,3 +3,4 @@
 **/client
 **/client.o
 **/client_queue.o
+.vscode
