@@ -14,6 +14,9 @@
 client_queue *queue;
 sem_t queue_semaphore;
 
+void job_one();
+int job_two(int value);
+
 void handle_request(int client_socket) {
     char buffer[BUFFER_LENGTH] = {0};
     bool job_complete = false;
@@ -78,6 +81,7 @@ void handle_request(int client_socket) {
 
         } else {
             //Send error message
+            printf("Invalid request from client %d", client_socket);
             ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
             if (server_response < 0) {
                 perror("Server Message Error");
@@ -117,9 +121,9 @@ void *thread_worker() {
     }
 }
 
-void spawn(pthread_t *threads[THREAD_MAX]) {
+void spawn(pthread_t threads[THREAD_MAX]) {
     for (int i = 0; i < THREAD_MAX; i++) {
-        pthread_create(*threads[i], NULL, thread_worker, NULL);
+        pthread_create(&threads[i], NULL, thread_worker, NULL);
     }
 }
 
@@ -162,6 +166,7 @@ int main(int argc, char *argv[]) {
         if (client_socket < 0) {
             perror("Accept Failed");
         } else {
+            printf("Client %d\n", client_socket);
             //Add to queue
             sem_wait(&queue_semaphore);
             int queue_status = client_queue_enqueue(queue, client_socket);
