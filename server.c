@@ -128,6 +128,8 @@ void spawn(pthread_t threads[THREAD_MAX]) {
 }
 
 int main(int argc, char *argv[]) {
+    //Create socket to listen on
+    //bind socket to ip and port (43434)
     //for each connection create a thread to handle that connection
     pthread_t threads[THREAD_MAX];
     spawn(threads);
@@ -138,8 +140,11 @@ int main(int argc, char *argv[]) {
     //Set up socket to listen on
     struct sockaddr_in server_address, client_address;
     socklen_t client_address_length = sizeof(client_address);
+    char buffer[1024] = {0};
+    char *server_message = "Message Recieved";
 
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
     if (server_socket < 1) {
         perror("Socket Failed");
         exit(-1);
@@ -150,12 +155,14 @@ int main(int argc, char *argv[]) {
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
     int bind_status = bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address));
+
     if (bind_status < 0) {
         perror("Bind Failed");
         exit(-1);
     }
 
     int listen_status = listen(server_socket, 10);
+
     if (listen_status < 0) {
         perror("Listen Failed");
         exit(-1);
@@ -178,24 +185,18 @@ int main(int argc, char *argv[]) {
                 close(client_socket);
             }
         }
-    }
 
-    for (int i = 0; i < THREAD_MAX; i++) {
-        pthread_join(threads[i], NULL);
     }
+    printf("Client Message: %s\n", buffer);
+    
+    ssize_t server_response = send(client_socket, server_message, strlen(server_message), 0);
 
+    if (server_response < 0) {
+        perror("Server Message Error");
+    }
+    printf("Message Sent\n");
+
+    close(client_socket);
     close(server_socket);
     return 0;
 }
-
-/*
-Create a set of threads up to an arbitrary maximum
-Send each new connection to be handled by those threads
-Keep track of the amount of threads active
-If the thread maximimum is reached start queueing the connection and request associated
-Create an arbitrary queue maximum
-If the max queue limit is reached send a cooldown timer to the client to let it wait for some threads to free up
-Once a thread is free have it recieve from the queue and handle the request
-If the queue is empty have the threads pick up directly from main()
-
-*/
