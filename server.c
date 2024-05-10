@@ -187,16 +187,7 @@ int main(int argc, char *argv[]) {
         }
 
     }
-    printf("Client Message: %s\n", buffer);
-    
-    ssize_t server_response = send(client_socket, server_message, strlen(server_message), 0);
 
-    if (server_response < 0) {
-        perror("Server Message Error");
-    }
-    printf("Message Sent\n");
-
-    close(client_socket);
     close(server_socket);
     return 0;
 }
