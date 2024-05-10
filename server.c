@@ -10,7 +10,6 @@
 #include "client_queue.h"
 #include "communication.h"
 
-
 client_queue *queue;
 sem_t queue_semaphore;
 
@@ -20,7 +19,12 @@ int job_two(int value);
 void handle_request(int client_socket) {
     char buffer[BUFFER_LENGTH] = {0};
     bool job_complete = false;
-    
+    ssize_t server_response = send(client_socket, CONNECTION_ESTABLISHED, strlen(CONNECTION_ESTABLISHED), 0);
+    if (server_response < 0) {
+        perror("Server Message Error");
+        close(client_socket);
+        return;
+    }
     while (!job_complete) {
         //Continue to process client if invalid message submitted
         int retry = 0;
@@ -90,7 +94,6 @@ void handle_request(int client_socket) {
             }
         }
     }
-
     close(client_socket);
 }
 
