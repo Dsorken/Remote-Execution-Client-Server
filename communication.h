@@ -5,6 +5,7 @@
 #define THREAD_MAX 10
 #define QUEUE_MAX 200
 #define POLL_MAX 10
+#define TIMEOUT 5
 #define CONNECTION_ESTABLISHED "G"
 #define OVERLOADED "O"
 #define MESSAGE_PROCCESSING "P"
