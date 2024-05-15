@@ -62,6 +62,12 @@ void handle_request(int client_socket) {
 
         if (strcmp(command, JOB1) == 0) {
             job_one();
+            ssize_t server_response = send(client_socket, REQUEST_PROCESSED, strlen(REQUEST_PROCESSED), 0);
+            if (server_response < 0) {
+                perror("Server Message Error");
+                close(client_socket);
+                return; 
+            }
             job_complete = true;
         }
         else if (strcmp(command, JOB2) == 0) {
@@ -144,7 +150,6 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in server_address, client_address;
     socklen_t client_address_length = sizeof(client_address);
     char buffer[1024] = {0};
-    char *server_message = "Message Recieved";
 
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
