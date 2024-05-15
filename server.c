@@ -25,6 +25,7 @@ void handle_request(int client_socket) {
         close(client_socket);
         return;
     }
+    printf("Connection Established with %d\n", client_socket);
     while (!job_complete) {
         //Continue to process client if invalid message submitted
         int retry = 0;
@@ -176,12 +177,13 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
 
+    printf("Server Listening\n");
     while (1) {
         int client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_length);
         if (client_socket < 0) {
             perror("Accept Failed");
         } else {
-            printf("Client %d\n", client_socket);
+            printf("Client Socket %d Accepted\n", client_socket);
             //Add to queue
             sem_wait(&queue_semaphore);
             int queue_status = client_queue_enqueue(queue, client_socket);
@@ -189,9 +191,11 @@ int main(int argc, char *argv[]) {
 
             if (queue_status < 0) {
                 //Let client know to wait
+                printf("Server Overloaded, client %d rejected\n", client_socket);
                 ssize_t overload_response = send(client_socket, OVERLOADED, strlen(OVERLOADED), 0);
                 close(client_socket);
             }
+            else printf("Client %d added to queue\n", client_socket);
         }
 
     }

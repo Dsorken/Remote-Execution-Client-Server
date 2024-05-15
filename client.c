@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         } 
         else connected = true;
     }
-    printf("Connection Established\n");
+    printf("Connection eEstablished\n");
     printf("Waiting for server response...\n");
 
     //Server response loop
@@ -63,6 +63,7 @@ int main(int argc, char *argv[]) {
         retry++;
         read_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
     }
+    printf("Server Response Recieved\n");
 
     //Process server response, if overloaded close current connection, try again in set amount of time
     //If connection established message recieved then server is ready to take request
