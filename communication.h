@@ -1,7 +1,7 @@
 #define INT_LENGTH 12
 #define BUFFER_LENGTH 1024
 #define COMMAND_LENGTH 5
-#define PORT 43434
+#define PORT 43421
 #define THREAD_MAX 10
 #define QUEUE_MAX 200
 #define POLL_MAX 10
