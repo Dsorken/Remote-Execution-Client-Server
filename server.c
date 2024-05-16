@@ -17,11 +17,12 @@ void job_one();
 int job_two(int value);
 
 void handle_request(int client_socket) {
+    printf("Worker Started\n");
     char buffer[BUFFER_LENGTH] = {0};
     bool job_complete = false;
     ssize_t server_response = send(client_socket, CONNECTION_ESTABLISHED, strlen(CONNECTION_ESTABLISHED), 0);
     if (server_response < 0) {
-        perror("Server Message Error");
+        perror("Server Message Error 1");
         close(client_socket);
         return;
     }
@@ -40,7 +41,7 @@ void handle_request(int client_socket) {
             ssize_t server_response = send(client_socket, MESSAGE_ERROR, strlen(MESSAGE_ERROR), 0);
             if (server_response < 0) {
                 //If server message as well connection is broken so close connection
-                perror("Server Message Error");
+                perror("Server Message Error 2");
                 close(client_socket);
                 return;
             } 
@@ -51,7 +52,7 @@ void handle_request(int client_socket) {
 
         ssize_t server_response = send(client_socket, MESSAGE_PROCCESSING, strlen(MESSAGE_PROCCESSING), 0);
         if (server_response < 0) {
-            perror("Server Message Error");
+            perror("Server Message Error 3");
             close(client_socket);
             return;
         }
@@ -65,7 +66,7 @@ void handle_request(int client_socket) {
             job_one();
             ssize_t server_response = send(client_socket, REQUEST_PROCESSED, strlen(REQUEST_PROCESSED), 0);
             if (server_response < 0) {
-                perror("Server Message Error");
+                perror("Server Message Error 4");
                 close(client_socket);
                 return; 
             }
@@ -84,7 +85,7 @@ void handle_request(int client_socket) {
             snprintf(value_str, sizeof(value_str), "%d", value);
             ssize_t server_response = send(client_socket, value_str, strlen(value_str), 0);
             if (server_response < 0) {
-                perror("Server Message Error");
+                perror("Server Message Error 5");
                 close(client_socket);
                 return; 
             }
@@ -95,7 +96,7 @@ void handle_request(int client_socket) {
             printf("Invalid request from client %d", client_socket);
             ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
             if (server_response < 0) {
-                perror("Server Message Error");
+                perror("Server Message Error 6");
                 close(client_socket);
                 return;
             }
@@ -121,12 +122,13 @@ void *thread_worker() {
     //Handle client request
     //When request handled close the connection and begin polling again
     printf("Thread %ld polling\n", pthread_self());
-    while (1) {
+    while (true) {
         sem_wait(&queue_semaphore);
         int client_socket = client_queue_dequeue(queue);
         sem_post(&queue_semaphore);
 
-        if (client_socket <= 0) {
+        if (client_socket >= 0) {
+            printf("Thread %ld Accepted Client %d\n", pthread_self(), client_socket);
             handle_request(client_socket);
         }
     }
@@ -142,11 +144,12 @@ int main(int argc, char *argv[]) {
     //Create socket to listen on
     //bind socket to ip and port (43434)
     //for each connection create a thread to handle that connection
-    pthread_t threads[THREAD_MAX];
-    spawn(threads);
 
     queue = client_queue_initialize(QUEUE_MAX);
     sem_init(&queue_semaphore, 0, 1);
+
+    pthread_t threads[THREAD_MAX];
+    spawn(threads);
 
     //Set up socket to listen on
     struct sockaddr_in server_address, client_address;
@@ -206,6 +209,8 @@ int main(int argc, char *argv[]) {
 
     }
 
+    for (int i = 0; i < THREAD_MAX; i++) pthread_join(threads[i], NULL);
     close(server_socket);
+    sem_destroy(&queue_semaphore);
     return 0;
 }
