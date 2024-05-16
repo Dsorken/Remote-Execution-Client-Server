@@ -28,6 +28,7 @@ void handle_request(int client_socket) {
     }
     printf("Connection Established with %d\n", client_socket);
     while (!job_complete) {
+        memset(buffer, 0, sizeof(buffer));
         //Continue to process client if invalid message submitted
         int retry = 0;
         ssize_t client_request = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
@@ -36,7 +37,7 @@ void handle_request(int client_socket) {
             //Unable to get client message
             printf("Client Message Error, Client %d\n", client_socket);
             if (retry > POLL_MAX) return;
-
+            memset(buffer, 0, sizeof(buffer));
             //Respond with error
             ssize_t server_response = send(client_socket, MESSAGE_ERROR, strlen(MESSAGE_ERROR), 0);
             if (server_response < 0) {
@@ -60,9 +61,10 @@ void handle_request(int client_socket) {
 
         //Get the command from buffer
         char command[COMMAND_LENGTH] = {0};
-        strncpy(command, buffer, 4);
+        strncpy(command, buffer, COMMAND_LENGTH - 1);
 
         if (strcmp(command, JOB1) == 0) {
+            printf("Job One Starting for Client %d\n", client_socket);
             job_one();
             ssize_t server_response = send(client_socket, REQUEST_PROCESSED, strlen(REQUEST_PROCESSED), 0);
             if (server_response < 0) {
@@ -157,7 +159,6 @@ int main(int argc, char *argv[]) {
     //Set up socket to listen on
     struct sockaddr_in server_address, client_address;
     socklen_t client_address_length = sizeof(client_address);
-    char buffer[1024] = {0};
 
     int server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
