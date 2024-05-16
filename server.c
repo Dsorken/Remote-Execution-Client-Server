@@ -125,6 +125,7 @@ void *thread_worker() {
     while (true) {
         sem_wait(&queue_semaphore);
         int client_socket = client_queue_dequeue(queue);
+        if (client_socket > 0) printf("Socket: %d\n", client_socket);
         sem_post(&queue_semaphore);
 
         if (client_socket >= 0) {
