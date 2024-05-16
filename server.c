@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
@@ -20,10 +21,22 @@ int server_socket;
 void job_one();
 int job_two(int value);
 
+
+int is_numerical(const char *str) {
+    // Check the first character
+    if (*str == '-') str++; 
+
+    while (*str != '\0') {
+        if (!isdigit(*str)) return false;
+        str++;
+    }
+    return true; 
+}
+
 void handle_request(int client_socket) {
     printf("Worker Started\n");
-    char buffer[BUFFER_LENGTH] = {0};
     bool job_complete = false;
+    char buffer[BUFFER_LENGTH];
     ssize_t server_response = send(client_socket, CONNECTION_ESTABLISHED, strlen(CONNECTION_ESTABLISHED), 0);
     if (server_response < 0) {
         printf("Server Message Error on Client %d\n", client_socket);
@@ -61,7 +74,7 @@ void handle_request(int client_socket) {
             close(client_socket);
             return;
         }
-        printf("Proccessing message sent to %d\n", client_socket);
+        printf("Processing message sent to Client %d\n", client_socket);
 
         //Get the command from buffer
         char command[COMMAND_LENGTH] = {0};
@@ -83,27 +96,40 @@ void handle_request(int client_socket) {
             //get value following command from buffer, should be an integer
             char value_str[INT_LENGTH] = {0};
             memcpy(value_str, buffer + COMMAND_LENGTH, INT_LENGTH - 1);
-
-            //Convert to integer and run calculation
-            int value = atoi(value_str);
-            value = job_two(value);
-
-            //Convert calculated value back to string and send to client
-            snprintf(value_str, sizeof(value_str), "%d", value);
-            ssize_t server_response = send(client_socket, value_str, strlen(value_str), 0);
-            if (server_response < 0) {
-                printf("Server Message Error on Client %d\n", client_socket);
-                close(client_socket);
-                return; 
+            printf("String Length %d, String %s\n", strlen(value_str), value_str);
+            if (strlen(value_str) == 0 || !is_numerical(value_str)) {
+                printf("Invalid entry for Job Two from Client %d\n", client_socket);
+                ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
+                if (server_response < 0) {
+                    printf("Server Message Error on Client %d\n", client_socket);
+                    close(client_socket);
+                    return;
+                }
             }
-            printf("Job Two Complete for Client %d\n", client_socket);
-            job_complete = true;
+            else {
+                printf("Job Two Starting for Client %d\n", client_socket);
+                printf("Value to calculate for Client %d: %s\n", client_socket, value_str);
+                //Convert to integer and run calculation
+                int value = atoi(value_str);
+                value = job_two(value);
+
+                //Convert calculated value back to string and send to client
+                snprintf(value_str, sizeof(value_str), "%d", value);
+                printf("Calculated value for Client %d: %s\n", client_socket, value_str);
+                ssize_t server_response = send(client_socket, value_str, strlen(value_str), 0);
+                if (server_response < 0) {
+                    printf("Server Message Error on Client %d\n", client_socket);
+                    close(client_socket);
+                    return; 
+                }
+                printf("Job Two Complete for Client %d\n", client_socket);
+                job_complete = true;
+            }
 
         } else {
             //Send error message
-            printf("Invalid request from client %d\n", client_socket);
+            printf("Invalid request from Client %d\n", client_socket);
             ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
-            printf("SENT\n");
             if (server_response < 0) {
                 printf("Server Message Error on Client %d\n", client_socket);
                 close(client_socket);
@@ -160,11 +186,16 @@ void close_server(int sig) {
     exit(0);
 }
 
+void client_lost(int sig) {
+    printf("Lost Connection With Client\n");
+}
+
 int main(int argc, char *argv[]) {
     //Create socket to listen on
     //bind socket to ip and port (43434)
     //for each connection create a thread to handle that connection
     signal(SIGINT, close_server);
+    signal(SIGPIPE, client_lost);
 
     queue = client_queue_initialize(QUEUE_MAX);
     sem_init(&queue_semaphore, 0, 1);
