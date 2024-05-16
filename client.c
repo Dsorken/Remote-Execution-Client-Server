@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     }
 
     ssize_t server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
-    while (server_status < 0) {
+    while (server_status <= 0) {
         printf("Server Message Error\n");
         if (retry > POLL_MAX) {
             printf("Exiting\n");
