@@ -25,7 +25,6 @@ int job_two(int value);
 int is_numerical(const char *str) {
     // Check the first character
     if (*str == '-') str++; 
-
     while (*str != '\0') {
         if (!isdigit(*str)) return false;
         str++;
@@ -34,7 +33,6 @@ int is_numerical(const char *str) {
 }
 
 void handle_request(int client_socket) {
-    printf("Worker Started\n");
     bool job_complete = false;
     char buffer[BUFFER_LENGTH];
     ssize_t server_response = send(client_socket, CONNECTION_ESTABLISHED, strlen(CONNECTION_ESTABLISHED), 0);
@@ -77,8 +75,8 @@ void handle_request(int client_socket) {
         printf("Processing message sent to Client %d\n", client_socket);
 
         //Get the command from buffer
-        char command[COMMAND_LENGTH] = {0};
-        strncpy(command, buffer, COMMAND_LENGTH - 1);
+        char command[COMMAND_LENGTH + 1] = {0};
+        strncpy(command, buffer, COMMAND_LENGTH);
 
         if (strcmp(command, JOB1) == 0) {
             printf("Job One Starting for Client %d\n", client_socket);
@@ -96,7 +94,6 @@ void handle_request(int client_socket) {
             //get value following command from buffer, should be an integer
             char value_str[INT_LENGTH] = {0};
             memcpy(value_str, buffer + COMMAND_LENGTH, INT_LENGTH - 1);
-            printf("String Length %d, String %s\n", strlen(value_str), value_str);
             if (strlen(value_str) == 0 || !is_numerical(value_str)) {
                 printf("Invalid entry for Job Two from Client %d\n", client_socket);
                 ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
@@ -125,7 +122,6 @@ void handle_request(int client_socket) {
                 printf("Job Two Complete for Client %d\n", client_socket);
                 job_complete = true;
             }
-
         } else {
             //Send error message
             printf("Invalid request from Client %d\n", client_socket);
@@ -137,7 +133,7 @@ void handle_request(int client_socket) {
             }
         }
     }
-    printf("Closing conection with Client %d\n", client_socket);
+    printf("Closing connection with Client %d\n", client_socket);
     close(client_socket);
 }
 
