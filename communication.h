@@ -13,4 +13,4 @@
 #define MESSAGE_ERROR "E"
 #define INVALID_MESSAGE "I"
 #define JOB1 "J1"
-#define JOB2 "J2"
+#define JOB2 "J2 "
