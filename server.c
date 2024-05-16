@@ -22,7 +22,7 @@ void handle_request(int client_socket) {
     bool job_complete = false;
     ssize_t server_response = send(client_socket, CONNECTION_ESTABLISHED, strlen(CONNECTION_ESTABLISHED), 0);
     if (server_response < 0) {
-        perror("Server Message Error 1");
+        printf("Server Message Error on Client %d\n", client_socket);
         close(client_socket);
         return;
     }
@@ -34,14 +34,14 @@ void handle_request(int client_socket) {
         while (client_request < 0) {
             //Allow client to resend message until correct or until retry count maxed out
             //Unable to get client message
-            perror("Client Message Error");
+            printf("Client Message Error, Client %d\n", client_socket);
             if (retry > POLL_MAX) return;
 
             //Respond with error
             ssize_t server_response = send(client_socket, MESSAGE_ERROR, strlen(MESSAGE_ERROR), 0);
             if (server_response < 0) {
                 //If server message as well connection is broken so close connection
-                perror("Server Message Error 2");
+                printf("Server Message Error on Client %d\n", client_socket);
                 close(client_socket);
                 return;
             } 
@@ -52,7 +52,7 @@ void handle_request(int client_socket) {
 
         ssize_t server_response = send(client_socket, MESSAGE_PROCCESSING, strlen(MESSAGE_PROCCESSING), 0);
         if (server_response < 0) {
-            perror("Server Message Error 3");
+            printf("Server Message Error on Client %d\n", client_socket);
             close(client_socket);
             return;
         }
@@ -66,10 +66,11 @@ void handle_request(int client_socket) {
             job_one();
             ssize_t server_response = send(client_socket, REQUEST_PROCESSED, strlen(REQUEST_PROCESSED), 0);
             if (server_response < 0) {
-                perror("Server Message Error 4");
+                printf("Server Message Error on Client %d\n", client_socket);
                 close(client_socket);
                 return; 
             }
+            printf("Job One Complete for Client %d\n", client_socket);
             job_complete = true;
         }
         else if (strcmp(command, JOB2) == 0) {
@@ -85,10 +86,11 @@ void handle_request(int client_socket) {
             snprintf(value_str, sizeof(value_str), "%d", value);
             ssize_t server_response = send(client_socket, value_str, strlen(value_str), 0);
             if (server_response < 0) {
-                perror("Server Message Error 5");
+                printf("Server Message Error on Client %d\n", client_socket);
                 close(client_socket);
                 return; 
             }
+            printf("Job Two Complete for Client %d\n", client_socket);
             job_complete = true;
 
         } else {
@@ -96,7 +98,7 @@ void handle_request(int client_socket) {
             printf("Invalid request from client %d", client_socket);
             ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
             if (server_response < 0) {
-                perror("Server Message Error 6");
+                printf("Server Message Error on Client %d\n", client_socket);
                 close(client_socket);
                 return;
             }
