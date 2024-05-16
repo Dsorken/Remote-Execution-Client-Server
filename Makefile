@@ -5,7 +5,7 @@ all: server client
 server: server.o client_queue.o
 	$(CC) -o server server.o client_queue.o -pthread
 
-server.o: server.c
+server.o: server.c communication.h
 	$(CC) -c server.c
 
 client_queue.o: client_queue.c
@@ -14,5 +14,5 @@ client_queue.o: client_queue.c
 client: client.o
 	$(CC) -o client client.o
 
-client.o: client.c
+client.o: client.c communication.h
 	$(CC) -c client.c
