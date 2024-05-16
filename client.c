@@ -30,50 +30,52 @@ int main(int argc, char *argv[]) {
     server_address.sin_port = htons(PORT);
     server_address.sin_addr.s_addr = inet_addr(ip_address);
 
-    connection:
-    while (!connected) {
-        int server_connection = connect(client_socket, (struct sockaddr*) &server_address, sizeof(server_address));
+    bool server_ready = false;
+    while (!server_ready) {
+        while (!connected) {
+            int server_connection = connect(client_socket, (struct sockaddr*) &server_address, sizeof(server_address));
 
-        if (server_connection < 0) {
-            printf("Connection Failed\n");
-            printf("Would you like to try again? (y/n): ");
-            char response;
-            char entered_char;
-            while ((entered_char = getchar()) != '\n' && entered_char != EOF) response = entered_char;
-            if (response == 'n') {
-                printf("Exiting\n");
-                exit(0);
-            }
-        } 
-        else connected = true;
-    }
-    printf("Connection Established\n");
-    printf("Waiting for server response...\n");
-
-    //Server response loop
-    //If server message not able to be read loop until retry limit reached, then exit
-    int retry = 0;
-    ssize_t read_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
-    while (read_status <= 0) {
-        printf("Server Message Error\n");
-        if (retry > POLL_MAX) {
-            printf("Exiting\n");
-            exit(-1);
+            if (server_connection < 0) {
+                printf("Connection Failed\n");
+                printf("Would you like to try again? (y/n): ");
+                char response;
+                char entered_char;
+                while ((entered_char = getchar()) != '\n' && entered_char != EOF) response = entered_char;
+                if (response == 'n') {
+                    printf("Exiting\n");
+                    exit(0);
+                }
+            } 
+            else connected = true;
         }
-        retry++;
-        read_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
-    }
-    printf("Server Response Recieved\n");
+        printf("Connection Established\n");
+        printf("Waiting for server response...\n");
 
-    //Process server response, if overloaded close current connection, try again in set amount of time
-    //If connection established message recieved then server is ready to take request
-    if (strcmp(buffer, OVERLOADED) == 0) {
-        printf("Server Overloaded\n");
-        printf("Waiting %d seconds before retrying\n", TIMEOUT);
-        goto connection;
-    }
-    else if (strcmp(buffer, CONNECTION_ESTABLISHED) == 0) {
-        printf("Server Ready\n");
+        //Server response loop
+        //If server message not able to be read loop until retry limit reached, then exit
+        int retry = 0;
+        ssize_t read_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
+        while (read_status <= 0) {
+            printf("Server Message Error\n");
+            if (retry > POLL_MAX) {
+                printf("Exiting\n");
+                exit(-1);
+            }
+            retry++;
+            read_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
+        }
+        printf("Server Response Recieved\n");
+
+        //Process server response, if overloaded close current connection, try again in set amount of time
+        //If connection established message recieved then server is ready to take request
+        if (strcmp(buffer, OVERLOADED) == 0) {
+            printf("Server Overloaded\n");
+            printf("Waiting %d seconds before retrying\n", TIMEOUT);
+        }
+        else if (strcmp(buffer, CONNECTION_ESTABLISHED) == 0) {
+            printf("Server Ready\n");
+            server_ready = true;
+        }
     }
 
     //Send request to server
@@ -83,11 +85,11 @@ int main(int argc, char *argv[]) {
     while (invalid_message) {
         invalid_message = false;
         printf("Enter Request: ");
-        char client_message[COMMAND_LENGTH];
+        char client_message[COMMAND_LENGTH + INT_LENGTH];
         char entered_char;
         int i = 0;
         while ((entered_char = getchar()) != '\n' && entered_char != EOF) {
-            if (i < COMMAND_LENGTH - 1) client_message[i] = entered_char;
+            if (i < COMMAND_LENGTH + INT_LENGTH - 1) client_message[i] = entered_char;
             i++;
         }
 
@@ -98,6 +100,7 @@ int main(int argc, char *argv[]) {
             exit(-1);
         }
 
+        int retry = 0;
         ssize_t server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
         while (server_status <= 0) {
             printf("Server Message Error\n");
@@ -119,6 +122,7 @@ int main(int argc, char *argv[]) {
         else if (strcmp(buffer, MESSAGE_PROCCESSING) == 0) {
             memset(buffer, 0, sizeof(buffer));
             printf("Server Processing Request...\n");
+            retry = 0;
             ssize_t server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
             while (server_status <= 0) {
                 printf("Server Message Error\n");
