@@ -7,11 +7,14 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <signal.h>
 #include "client_queue.h"
 #include "communication.h"
 
 client_queue *queue;
 sem_t queue_semaphore;
+pthread_t global_threads[THREAD_MAX];
+int server_socket;
 
 void job_one();
 int job_two(int value);
@@ -99,6 +102,7 @@ void handle_request(int client_socket) {
             //Send error message
             printf("Invalid request from client %d\n", client_socket);
             ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
+            printf("SENT\n");
             if (server_response < 0) {
                 printf("Server Message Error on Client %d\n", client_socket);
                 close(client_socket);
@@ -129,7 +133,6 @@ void *thread_worker() {
     while (true) {
         sem_wait(&queue_semaphore);
         int client_socket = client_queue_dequeue(queue);
-        if (client_socket > 0) printf("Socket: %d\n", client_socket);
         sem_post(&queue_semaphore);
 
         if (client_socket >= 0) {
@@ -145,22 +148,31 @@ void spawn(pthread_t threads[THREAD_MAX]) {
     }
 }
 
+void close_server(int sig) {
+    printf("Closing Server\n");
+    for (int i = 0; i < THREAD_MAX; i++) pthread_join(global_threads[i], NULL);
+    sem_destroy(&queue_semaphore);
+    client_queue_destroy(queue);
+    close(server_socket);
+    exit(0);
+}
+
 int main(int argc, char *argv[]) {
     //Create socket to listen on
     //bind socket to ip and port (43434)
     //for each connection create a thread to handle that connection
+    signal(SIGINT, close_server);
 
     queue = client_queue_initialize(QUEUE_MAX);
     sem_init(&queue_semaphore, 0, 1);
 
-    pthread_t threads[THREAD_MAX];
-    spawn(threads);
+    spawn(global_threads);
 
     //Set up socket to listen on
     struct sockaddr_in server_address, client_address;
     socklen_t client_address_length = sizeof(client_address);
 
-    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (server_socket < 1) {
         perror("Socket Failed");
@@ -191,7 +203,7 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Server Listening\n");
-    while (1) {
+    while (true) {
         int client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_length);
         if (client_socket < 0) {
             perror("Accept Failed");
@@ -212,9 +224,5 @@ int main(int argc, char *argv[]) {
         }
 
     }
-
-    for (int i = 0; i < THREAD_MAX; i++) pthread_join(threads[i], NULL);
-    close(server_socket);
-    sem_destroy(&queue_semaphore);
     return 0;
 }
