@@ -16,7 +16,7 @@ bool client_queue_isfull(client_queue *queue) {
 }
 
 bool client_queue_isempty(client_queue *queue) {
-    if (queue->front = -1) return true;
+    if (queue->front == -1) return true;
     return false;
 }
 

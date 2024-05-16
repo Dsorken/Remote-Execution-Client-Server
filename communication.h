@@ -1,10 +1,11 @@
 #define INT_LENGTH 12
 #define BUFFER_LENGTH 1024
-#define COMMAND_LENGTH 5
-#define PORT 43434
+#define COMMAND_LENGTH 3
+#define PORT 43421
 #define THREAD_MAX 10
 #define QUEUE_MAX 200
 #define POLL_MAX 10
+#define TIMEOUT 5
 #define CONNECTION_ESTABLISHED "G"
 #define OVERLOADED "O"
 #define MESSAGE_PROCCESSING "P"
@@ -12,4 +13,4 @@
 #define MESSAGE_ERROR "E"
 #define INVALID_MESSAGE "I"
 #define JOB1 "J1"
-#define JOB2 "J2"
+#define JOB2 "J2 "
