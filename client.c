@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
         } 
         else connected = true;
     }
-    printf("Connection eEstablished\n");
+    printf("Connection Established\n");
     printf("Waiting for server response...\n");
 
     //Server response loop

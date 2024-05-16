@@ -120,6 +120,7 @@ void *thread_worker() {
     //If queue has item lock queue semaphore, unqueue and then unlock queue 
     //Handle client request
     //When request handled close the connection and begin polling again
+    printf("Thread %ld polling\n", pthread_self());
     while (1) {
         sem_wait(&queue_semaphore);
         int client_socket = client_queue_dequeue(queue);
@@ -163,8 +164,13 @@ int main(int argc, char *argv[]) {
     server_address.sin_port = htons(PORT);
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    int bind_status = bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address));
+    int opt = 1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+    }
 
+    int bind_status = bind(server_socket, (struct sockaddr*) &server_address, sizeof(server_address));
     if (bind_status < 0) {
         perror("Bind Failed");
         exit(-1);
