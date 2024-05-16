@@ -13,8 +13,7 @@
 
 client_queue *queue;
 sem_t queue_semaphore;
-pthread_t global_threads[THREAD_MAX];
-int server_socket;
+bool server_running = true;
 
 void job_one();
 int job_two(int value);
@@ -130,7 +129,7 @@ void *thread_worker() {
     //If queue has item lock queue semaphore, unqueue and then unlock queue 
     //Handle client request
     //When request handled close the connection and begin polling again
-    while (true) {
+    while (server_running) {
         sem_wait(&queue_semaphore);
         int client_socket = client_queue_dequeue(queue);
         sem_post(&queue_semaphore);
@@ -149,12 +148,8 @@ void spawn(pthread_t threads[THREAD_MAX]) {
 }
 
 void close_server(int sig) {
-    printf("Closing Server\n");
-    for (int i = 0; i < THREAD_MAX; i++) pthread_join(global_threads[i], NULL);
-    sem_destroy(&queue_semaphore);
-    client_queue_destroy(queue);
-    close(server_socket);
-    exit(0);
+    printf("Closing Server...\n");
+    server_running = false;
 }
 
 int main(int argc, char *argv[]) {
@@ -166,13 +161,14 @@ int main(int argc, char *argv[]) {
     queue = client_queue_initialize(QUEUE_MAX);
     sem_init(&queue_semaphore, 0, 1);
 
-    spawn(global_threads);
+    pthread_t threads[THREAD_MAX];
+    spawn(threads);
 
     //Set up socket to listen on
     struct sockaddr_in server_address, client_address;
     socklen_t client_address_length = sizeof(client_address);
 
-    server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (server_socket < 1) {
         perror("Socket Failed");
@@ -203,7 +199,7 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Server Listening\n");
-    while (true) {
+    while (server_running) {
         int client_socket = accept(server_socket, (struct sockaddr*) &client_address, &client_address_length);
         if (client_socket < 0) {
             perror("Accept Failed");
@@ -224,5 +220,10 @@ int main(int argc, char *argv[]) {
         }
 
     }
+
+    for (int i = 0; i < THREAD_MAX; i++) pthread_join(threads[i], NULL);
+    close(server_socket);
+    sem_destroy(&queue_semaphore);
+    client_queue_destroy(queue);
     return 0;
 }
