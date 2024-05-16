@@ -79,44 +79,25 @@ int main(int argc, char *argv[]) {
     //Send request to server
     //If message_error recieved allow for request to be made again
     //Server will time out and close connection after retry limit reached
-    printf("Enter Request: ");
-    char client_message[COMMAND_LENGTH];
-    char entered_char;
-    int i = 0;
-    while ((entered_char = getchar()) != '\n' && entered_char != EOF && i < COMMAND_LENGTH - 1) {
-        client_message[i] = entered_char;
-        i++;
-    }
+    bool invalid_message = true;
+    while (invalid_message) {
+        invalid_message = false;
+        printf("Enter Request: ");
+        char client_message[COMMAND_LENGTH];
+        char entered_char;
+        int i = 0;
+        while ((entered_char = getchar()) != '\n' && entered_char != EOF) {
+            if (i < COMMAND_LENGTH - 1) client_message[i] = entered_char;
+            i++;
+        }
 
-    message:
-    memset(buffer, 0, sizeof(buffer));
-    ssize_t send_status = send(client_socket, client_message, strlen(client_message), 0);
-    if (send_status < 0) {
-        printf("Send Failed");
-        exit(-1);
-    }
-
-    ssize_t server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
-    while (server_status <= 0) {
-        printf("Server Message Error\n");
-        if (retry > POLL_MAX) {
-            printf("Exiting\n");
+        memset(buffer, 0, sizeof(buffer));
+        ssize_t send_status = send(client_socket, client_message, strlen(client_message), 0);
+        if (send_status < 0) {
+            printf("Send Failed");
             exit(-1);
         }
-        retry++;
-        server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
-    }
 
-    if (strcmp(buffer, MESSAGE_ERROR) == 0) {
-        printf("Server Message Error\n");
-        goto message;
-    }
-
-    //Recieve server response, if desired response recieved close connection
-    //If invalid_message recieved restart request process
-    else if (strcmp(buffer, MESSAGE_PROCCESSING) == 0) {
-        memset(buffer, 0, sizeof(buffer));
-        printf("Server Processing Request...\n");
         ssize_t server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
         while (server_status <= 0) {
             printf("Server Message Error\n");
@@ -127,12 +108,34 @@ int main(int argc, char *argv[]) {
             retry++;
             server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
         }
-        if (strcmp(buffer, INVALID_MESSAGE) == 0) {
-            printf("Invalid Request\n");
-            goto message;
-        } 
-        else if (strcmp(buffer, REQUEST_PROCESSED) == 0) printf("Request Processed\n");
-        else printf("Calculated Value: %s\n", buffer);
+
+        if (strcmp(buffer, MESSAGE_ERROR) == 0) {
+            printf("Server Message Error\n");
+            invalid_message = true;
+        }
+
+        //Recieve server response, if desired response recieved close connection
+        //If invalid_message recieved restart request process
+        else if (strcmp(buffer, MESSAGE_PROCCESSING) == 0) {
+            memset(buffer, 0, sizeof(buffer));
+            printf("Server Processing Request...\n");
+            ssize_t server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
+            while (server_status <= 0) {
+                printf("Server Message Error\n");
+                if (retry > POLL_MAX) {
+                    printf("Exiting\n");
+                    exit(-1);
+                }
+                retry++;
+                server_status = recv(client_socket, &buffer, sizeof(buffer) - 1, 0);
+            }
+            if (strcmp(buffer, INVALID_MESSAGE) == 0) {
+                printf("Invalid Request\n");
+                invalid_message = true;
+            } 
+            else if (strcmp(buffer, REQUEST_PROCESSED) == 0) printf("Request Processed\n");
+            else printf("Calculated Value: %s\n", buffer);
+        }
     }
 
     printf("Closing Connection\n");
