@@ -95,7 +95,7 @@ void handle_request(int client_socket) {
 
         } else {
             //Send error message
-            printf("Invalid request from client %d", client_socket);
+            printf("Invalid request from client %d\n", client_socket);
             ssize_t server_response = send(client_socket, INVALID_MESSAGE, strlen(INVALID_MESSAGE), 0);
             if (server_response < 0) {
                 printf("Server Message Error on Client %d\n", client_socket);
@@ -104,6 +104,7 @@ void handle_request(int client_socket) {
             }
         }
     }
+    printf("Closing conection with Client %d\n", client_socket);
     close(client_socket);
 }
 
@@ -123,7 +124,6 @@ void *thread_worker() {
     //If queue has item lock queue semaphore, unqueue and then unlock queue 
     //Handle client request
     //When request handled close the connection and begin polling again
-    printf("Thread %ld polling\n", pthread_self());
     while (true) {
         sem_wait(&queue_semaphore);
         int client_socket = client_queue_dequeue(queue);
