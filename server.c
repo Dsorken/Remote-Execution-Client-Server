@@ -13,7 +13,9 @@
 
 client_queue *queue;
 sem_t queue_semaphore;
-bool server_running = true;
+volatile bool server_running = true;
+pthread_t global_threads[THREAD_MAX];
+int server_socket;
 
 void job_one();
 int job_two(int value);
@@ -150,6 +152,12 @@ void spawn(pthread_t threads[THREAD_MAX]) {
 void close_server(int sig) {
     printf("Closing Server...\n");
     server_running = false;
+    sem_post(&queue_semaphore);
+    for (int i = 0; i < THREAD_MAX; i++) pthread_join(global_threads[i], NULL);
+    close(server_socket);
+    sem_destroy(&queue_semaphore);
+    client_queue_destroy(queue);
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
@@ -161,14 +169,13 @@ int main(int argc, char *argv[]) {
     queue = client_queue_initialize(QUEUE_MAX);
     sem_init(&queue_semaphore, 0, 1);
 
-    pthread_t threads[THREAD_MAX];
-    spawn(threads);
+    spawn(global_threads);
 
     //Set up socket to listen on
     struct sockaddr_in server_address, client_address;
     socklen_t client_address_length = sizeof(client_address);
 
-    int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+    server_socket = socket(AF_INET, SOCK_STREAM, 0);
 
     if (server_socket < 1) {
         perror("Socket Failed");
@@ -218,12 +225,5 @@ int main(int argc, char *argv[]) {
             }
             else printf("Client %d added to queue\n", client_socket);
         }
-
     }
-
-    for (int i = 0; i < THREAD_MAX; i++) pthread_join(threads[i], NULL);
-    close(server_socket);
-    sem_destroy(&queue_semaphore);
-    client_queue_destroy(queue);
-    return 0;
 }
